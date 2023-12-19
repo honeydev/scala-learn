@@ -1,0 +1,1 @@
+[WIKI](https://wiki.yandex.ru/homepage/scala/cats/heard-of-cats/day1/eq/)
