@@ -1,5 +1,5 @@
 package days.eq
-import cats._, cats.syntax.all._
+import cats.syntax.all._
 
 object Eq extends  App {
 
