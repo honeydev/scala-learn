@@ -1,4 +1,4 @@
-package days.eq
+package days.one
 import cats.syntax.all._
 
 object Order extends  App {

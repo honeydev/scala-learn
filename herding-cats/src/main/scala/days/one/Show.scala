@@ -1,4 +1,4 @@
-package days.eq
+package days.one
 
 import cats.Show
 import cats.syntax.all._
@@ -33,8 +33,6 @@ object ShowExample extends App {
     println(Car("Toyota").show)
     println(Car("Toyota").show === Car("Toyota").toString)
   }
-
-
 }
 
 case class Person(name: String)
