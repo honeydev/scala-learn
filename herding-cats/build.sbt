@@ -10,8 +10,11 @@ lazy val root = (project in file("."))
     name := "herding-cats",
     libraryDependencies ++= Seq(
       "org.typelevel" %% "cats-core" % "2.10.0",
+      "org.typelevel" %% "simulacrum" % "1.0.1",
       "org.scalameta" %% "munit" % "0.7.22" % Test
     )
   )
+
+scalacOptions += "-Ymacro-annotations"
 
 // See https://www.scala-sbt.org/1.x/docs/Using-Sonatype.html for instructions on how to publish to Sonatype.

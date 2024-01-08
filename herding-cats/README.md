@@ -1,0 +1,1 @@
+Playground for [hearding-cats](https://eed3si9n.com/herding-cats) lessons
