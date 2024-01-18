@@ -30,4 +30,3 @@ object FunctorEx extends App {
   
   assert { (x map (f map g)) === (x map f map g) }
 }
-
