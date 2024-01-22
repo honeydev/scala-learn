@@ -20,7 +20,21 @@ sealed trait Stream[+A] {
         } 
       }
     }
+
+  def takeWhile(p: A => Boolean): Stream[A] = {
+    this match {
+      case Empty => Empty
+      case Cons(h, tail) => {
+        val hValue = h() 
+        if (p(hValue))
+          Stream.cons(hValue, tail().takeWhile(p))
+        else
+          tail().takeWhile(p)
+      }
+    }
+  }
 }
+    
 
 case object Empty extends Stream[Nothing]
 case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
@@ -44,6 +58,7 @@ object Exercise extends App {
   val s = Stream(1, 2, 3)
 
   println(s.toList)
-  println(s.take(4).toList)
+  println(s.take(2).toList)
+  println(s.takeWhile(_ != 2).toList)
 }
 
