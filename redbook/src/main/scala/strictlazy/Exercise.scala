@@ -1,6 +1,5 @@
 package strictlazy
 
-
 sealed trait Stream[+A] {
 
   def toList: List[A] =
@@ -12,16 +11,14 @@ sealed trait Stream[+A] {
   def take(n: Int): Stream[A] =
     this match {
       case Empty => Empty
-      case Cons(h, tail) => {
-        if (n > 1) {
+      case Cons(h, tail) =>
+        if (n > 1)
           Stream.cons(h(), tail().take(n - 1))
-        } else {
+        else
           Stream.cons(h(), Empty)
-        } 
-      }
     }
 
-  def takeWhile(p: A => Boolean): Stream[A] = {
+  def takeWhile(p: A => Boolean): Stream[A] =
     this match {
       case Empty => Empty
       case Cons(h, tail) => {
@@ -32,9 +29,27 @@ sealed trait Stream[+A] {
           tail().takeWhile(p)
       }
     }
+
+  def foldRight[B](z: => B)(f: (A, => B) => B): B =
+    this match {
+      case Cons(h, t) => f(h(), t().foldRight(z)(f))
+      case _          => z
+    }
+
+  def forAll(p: A => Boolean): Boolean =
+    foldRight(true)((a, b) => p(a) && b)
+
+  def takeWhile2(p: A => Boolean): Stream[A] =
+    foldRight[Stream[A]](Empty)((a, b) => if (p(a)) Stream.cons(a, b) else b)
+  
+  def headOption: Option[A] = {
+    foldRight[Option[A]](None)((a, b) => Some(a))
+  }
+
+  def map[B](f: A => B): Stream[B] = {
+    foldRight[Stream[B]](Empty)((a, b) => Stream.cons(f(a), b))
   }
 }
-    
 
 case object Empty extends Stream[Nothing]
 case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
@@ -49,9 +64,8 @@ object Stream {
 
   def empty[A]: Stream[A] = Empty
 
-  def apply[A](as: A*): Stream[A] = {
+  def apply[A](as: A*): Stream[A] =
     if (as.isEmpty) empty else cons(as.head, apply(as.tail: _*))
-  }
 }
 
 object Exercise extends App {
@@ -60,5 +74,9 @@ object Exercise extends App {
   println(s.toList)
   println(s.take(2).toList)
   println(s.takeWhile(_ != 2).toList)
+  println(s.forAll(_ > 0))
+  println(s.takeWhile2(_ != 2).toList)
+  println(s.headOption)
+  println(s.map(_ + 1).toList)
 }
 
