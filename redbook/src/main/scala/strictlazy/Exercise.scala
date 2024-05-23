@@ -4,7 +4,7 @@ sealed trait Stream[+A] {
 
   def toList: List[A] =
     this match {
-      case Empty         => Nil
+      case Empty => Nil
       case Cons(h, tail) => h() :: tail().toList
     }
 
@@ -22,7 +22,7 @@ sealed trait Stream[+A] {
     this match {
       case Empty => Empty
       case Cons(h, tail) => {
-        val hValue = h() 
+        val hValue = h()
         if (p(hValue))
           Stream.cons(hValue, tail().takeWhile(p))
         else
@@ -33,7 +33,7 @@ sealed trait Stream[+A] {
   def foldRight[B](z: => B)(f: (A, => B) => B): B =
     this match {
       case Cons(h, t) => f(h(), t().foldRight(z)(f))
-      case _          => z
+      case _ => z
     }
 
   def forAll(p: A => Boolean): Boolean =
@@ -41,14 +41,22 @@ sealed trait Stream[+A] {
 
   def takeWhile2(p: A => Boolean): Stream[A] =
     foldRight[Stream[A]](Empty)((a, b) => if (p(a)) Stream.cons(a, b) else b)
-  
+
   def headOption: Option[A] = {
     foldRight[Option[A]](None)((a, b) => Some(a))
   }
 
-  def map[B](f: A => B): Stream[B] = {
+  def map[B](f: A => B): Stream[B] =
     foldRight[Stream[B]](Empty)((a, b) => Stream.cons(f(a), b))
-  }
+
+  def filter(f: A => Boolean): Stream[A] =
+    foldRight[Stream[A]](Empty)((a, b) => if (f(a)) Stream.cons(a, b) else b)
+
+  def append[B >: A](b: => B): Stream[B] =
+    foldRight(Stream(b))((a, b) => Stream.cons(a, b))
+
+  def merge[B >: A](b: => Stream[B]): Stream[B] =
+    foldRight(b)((a, b) => Stream.cons(a, b))
 }
 
 case object Empty extends Stream[Nothing]
@@ -78,5 +86,7 @@ object Exercise extends App {
   println(s.takeWhile2(_ != 2).toList)
   println(s.headOption)
   println(s.map(_ + 1).toList)
+  println(s.filter(_ != 2).toList)
+  println(s.append(4).toList)
+  println(s.merge(Stream(4, 5, 6)).toList)
 }
-
