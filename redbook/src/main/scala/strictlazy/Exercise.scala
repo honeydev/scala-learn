@@ -1,5 +1,4 @@
 package strictlazy
-
 sealed trait Stream[+A] {
 
   def toList: List[A] =
@@ -57,6 +56,9 @@ sealed trait Stream[+A] {
 
   def merge[B >: A](b: => Stream[B]): Stream[B] =
     foldRight(b)((a, b) => Stream.cons(a, b))
+  
+  def flatMap[B](f: A => Stream[B]) =
+    foldRight[Stream[B]](Empty)((a, acc) => f(a) `merge` acc)
 }
 
 case object Empty extends Stream[Nothing]
@@ -78,6 +80,8 @@ object Stream {
 
 object Exercise extends App {
   val s = Stream(1, 2, 3)
+  val fruits = Seq("apple", "banana", "orange")
+  val mapResult = fruits.flatMap(_.toUpperCase)
 
   println(s.toList)
   println(s.take(2).toList)
@@ -89,4 +93,6 @@ object Exercise extends App {
   println(s.filter(_ != 2).toList)
   println(s.append(4).toList)
   println(s.merge(Stream(4, 5, 6)).toList)
+  println(Stream(Stream(1), Stream(2)).flatMap(x => x).toList)
 }
+

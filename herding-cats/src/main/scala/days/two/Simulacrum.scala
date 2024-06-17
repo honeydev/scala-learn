@@ -22,3 +22,4 @@ object Simulacrum extends App {
   import CanTruthy.ops._
   println(10.truthy)
 }
+

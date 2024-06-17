@@ -16,3 +16,4 @@ object MonadLearn extends App {
 
     println(res2)
 }
+

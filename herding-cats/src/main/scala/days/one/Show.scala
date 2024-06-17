@@ -37,3 +37,4 @@ object ShowExample extends App {
 
 case class Person(name: String)
 case class Car(model: String)
+
