@@ -61,6 +61,71 @@ sealed trait Stream[+A] {
 
   def flatMap[B](f: A => Stream[B]) =
     foldRight[Stream[B]](Empty)((a, acc) => f(a) `merge` acc)
+
+  def startsWith[A](s: Stream[A]): Boolean = {
+    (this, s) match {
+      case (Empty, Cons(_, _)) => false
+      case (Cons(a, b), Cons(c, d)) if (a() == c()) => b().startsWith(d())
+      case (Cons(_, _), Empty) | (Empty, Empty) => true
+      case _                   => false
+    }
+  }
+
+  def startsWith2[A](s: Stream[A]): Boolean = {
+    this.zipAll(s).forAll {
+      case (Some(a), Some(b)) => a == b
+      case (None, Some(_))    => false
+      case (Some(_), None)    => true
+    }
+  }
+
+  def zipWith[B,C](that: Stream[B])(f: (A,B) => C): Stream[C] =
+    Stream.unfold((this, that)) {
+      case (Cons(h1, t1), Cons(h2, t2)) =>
+        Some((f(h1(), h2()), (t1(), t2())))
+      case _ => None
+    }
+
+  def zipAll[B](that: Stream[B]): Stream[(Option[A], Option[B])] =
+    Stream.unfold((this, that)) {
+      case (Empty, Empty) => None
+      case (Cons(h1, t1), Empty) => Some((Some(h1()) -> None) -> (t1() -> Empty))
+      case (Empty, Cons(h2, t2)) => Some((None -> Some(h2())) -> (Empty -> t2()))
+      case (Cons(h1, t1), Cons(h2, t2)) => Some((Some(h1()) -> Some(h2())) -> (t1() -> t2()))
+    }
+
+  def mapUnfold[B](f: A => B) = {
+    Stream.unfold(this) { case Cons(a, b) => Some(f(a()), b()) }
+  }
+
+  def takeUnfold(n: Int): Stream[A] =
+    Stream.unfold((this, n)) {
+      case (Cons(a, b), n) => if (n > 0) Some((a(), (b(), n - 1))) else None
+    }
+
+  def takeWhileUnfold(cond: A => Boolean): Stream[A] =
+    Stream.unfold(this) {
+      case Cons(a, b) => if (cond(a())) Some((a(), b())) else None
+    }
+
+  def zipWithUnfold[B, C](that: Stream[B])(f: (A, B) => C): Stream[C] =
+    Stream.unfold((this, that)) {
+      case (Cons(a, b), Cons(c, d)) => Some((f(a(), c()), (b(), d())))
+      case _                        => None
+    }
+
+  def zipAllUnfold[B](that: Stream[B]): Stream[(Option[A], Option[B])] =
+    Stream.unfold((this, that)) {
+      case (Empty, Empty) => None
+      case (Cons(a, b), Empty) => Some((Some(a()), None), (b(), Empty))
+      case (Empty, Cons(c, d)) => Some((None, Some(c())), (Empty, d()))
+      case (Cons(a, b), Cons(c, d)) => Some(((Some(a()), Some(c())), (b(), d())))
+    }
+
+  def startsWithUnfold[B](that: Stream[B]): Boolean = {
+    ???
+  }
+}
 }
 case object Empty extends Stream[Nothing]
 case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
@@ -105,6 +170,9 @@ object Stream {
 
   def fibs2: Stream[Int] =
     Stream.unfold((0, 1)) { case (a, b) => Some((a, (b, a + b))) }
+
+  def ones: Stream[Int] =
+    Stream.unfold(1)(_ => Some((1, 1)))
 }
 
 object Exercise extends App {
@@ -137,4 +205,15 @@ object Exercise extends App {
   println(Stream.constant2(3).take(6).toList)
   println(Stream.from2(1).take(10).toList)
   println(Stream.fibs2.take(10).toList)
+  println(Stream.from2(1).take(3).toList)
+  println(Stream.from2(1).take(3).startsWith(Stream(1, 2)))
+  println(Stream.from2(1).take(3).startsWith2(Stream(1, 2, 3)))
+  // only ones
+  println(Stream.ones.take(5).toList)
+  // mapUnfold
+  println(Stream.from2(1).mapUnfold(_ * 2).take(4).toList)
+  println(Stream.from2(0).takeUnfold(4).toList)
+  println(Stream.from2(3).takeWhileUnfold(_ < 10).toList)
+  println(Stream.from2(10).take(5).zipWithUnfold(Stream.from2(20).take(5)) { _ + _ }.toList)
+  print(Stream(1, 2, 3, 4).zipAllUnfold(Stream(2, 3, 4, 5, 6, 8)).toList)
 }
