@@ -1,6 +1,5 @@
 package days.tree
 
-import cats._
 import cats.syntax.all._
 
 object MonadLearn extends App {
@@ -13,7 +12,5 @@ object MonadLearn extends App {
       case Some(3 :: 4 :: Nil) => Some(Right(List(1)))
       case Some(h :: tail) => Some(Left(Some(tail)))
     }
-
-    println(res2)
 }
 
