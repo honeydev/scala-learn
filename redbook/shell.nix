@@ -7,7 +7,7 @@ in rec {
 
     buildInputs = [
       pkgs.sbt
-      pkgs.jdk11
+      pkgs.jdk21
       pkgs.postgresql
       pkgs.coursier
 #      pkgs.metals
