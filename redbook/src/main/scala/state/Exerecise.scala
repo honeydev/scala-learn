@@ -20,19 +20,42 @@ object Rand {
   def unit[A](a: A): Rand[A] =
     rng => (a, rng)
 
+  // def map[A, B](s: Rand[A])(f: A => B): Rand[B] =
+  //   rng => {
+  //     val (a, rng2) = s(rng)
+  //     (f(a), rng2)
+  //   }
   def map[A, B](s: Rand[A])(f: A => B): Rand[B] =
-    rng => {
-      val (a, rng2) = s(rng)
-      (f(a), rng2)
-    }
+    flatMap(s) { v => Rand.unit(f(v)) }
 
+  // def map2[A, B, C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] =
+  //   rng => {
+  //     val (a, rng1) = ra(rng) 
+  //     val (b, rng2) = rb(rng1)
+
+  //     (f(a, b), rng2)
+  //   }
+  //
   def map2[A, B, C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] =
-    rng => {
-      val (a, rng1) = ra(rng) 
-      val (b, rng2) = rb(rng1)
+    flatMap(ra) {  n1 => flatMap(rb) { n2 => unit(f(n1, n2)) } }
 
-      (f(a, b), rng2)
+  def flatMap[A, B](f: Rand[A])(g: A => Rand[B]): Rand[B] = {
+    rng => {
+      val (innerRand, rng2) = f(rng)
+
+      g(innerRand)(rng2)
     }
+  }
+
+
+  // IMPLEMENT flatMap VIA map
+  // def flatMap[A,B](f: Rand[A])(g: A => Rand[B]): Rand[B] = {
+  //   rng => {
+  //     val (randB, rng2) = map(f)(g)(rng)
+  //     randB(rng2)
+
+  //   }
+  // }
 
   def both[A, B](ra: Rand[A], rb: Rand[B]): Rand[(A, B)] = 
     map2(ra, rb)((_, _))
@@ -40,11 +63,8 @@ object Rand {
   def sequence[A](fs: List[Rand[A]]): Rand[List[A]] = {
     rng => 
       fs.foldLeft((List[A](), rng)) { case ((list, currentRng), rand: Rand[A]) => 
-
         val (a, rng2) = rand(currentRng)
-        
         (a :: list, rng2)
-
       }
   } 
 }
@@ -99,5 +119,6 @@ object Exerecise extends App {
   println(double(unit(5)))
   val sequenceRand = sequence(List.fill(5)(Rand.unit(5)))
   println(sequenceRand(SimpleRNG(12345L)))
+  println(flatMap(double(unit(5))) { v => unit(v) })
 }
 
