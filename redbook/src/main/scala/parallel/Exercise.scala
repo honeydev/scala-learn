@@ -1,10 +1,13 @@
 package parallel
 
-import parallel.Par.{UnitFuture, parMap, sequence}
-
 import java.lang.System.currentTimeMillis
-import java.util.concurrent.{Callable, ExecutorService, Executors, Future, TimeUnit}
-import scala.concurrent
+import java.util.concurrent._
+
+trait Comparable[A] {
+
+  def compare(a: A, b: A)
+}
+
 
 case class Computation[A](value: A)
 
@@ -12,10 +15,13 @@ object Par {
   type Par[A] = ExecutorService => Future[A]
 
   case class UnitFuture[A](get: A) extends Future[A] {
-
-    def unit[A](a: A): Par[A] = Par.unit(a)
+    def unit[A](a: A): Par[A] = {
+      Par.unit(a)
+    }
     def isDone = true
-    def get(timeout: Long, units: TimeUnit) = get
+    def get(timeout: Long, units: TimeUnit) = {
+      get
+    }    
     def isCancelled = false
     def cancel(evenIfRunning: Boolean): Boolean = false
   }
@@ -60,8 +66,12 @@ object Par {
 
   def fork[A](a: => Par[A]): Par[A] =
     es => es.submit(new Callable[A] {
-      def call = a(es).get
-    })
+        def call = {
+          println(s"Im get $es")
+          a(es).get
+        }
+      }
+    )
 
   def lazyUnit[A](a: => A): Par[A] = es => UnitFuture(a)
 
@@ -74,7 +84,7 @@ object Par {
   def map[A,B](par: Par[A])(f: A => B) =
     map2(par, unit(f)) { (a, f) => f(a) }
 
-  def sequence[A](ps: List[Par[A]]): Par[List[A]] = {
+  def sequence[A](ps: Seq[Par[A]]): Par[List[A]] = {
     ps match {
       case Nil => unit(List())
       case _   => map2(ps.head, sequence(ps.tail)) { (a, b) => a +: b }
@@ -85,14 +95,67 @@ object Par {
     val fbs: List[Par[B]] = ps.map(asyncF(f))
     sequence(fbs)
   }
+
+  def parFilter[A](as: List[A])(f: A => Boolean): Par[List[A]] = {
+    Par
+      .map(parMap(as)((v) => (v, f(v))))((l) => l.filter { case (a, b) => b }.map { case (a, b) => a })
+  }
+
+  // Clear solution from answers
+  // def parFilter[A](l: List[A])(f: A => Boolean): Par[List[A]] = fork:
+  // val pars: List[Par[List[A]]] =
+  //   l.map(asyncF(a => if f(a) then List(a) else List()))
+  // sequence(pars).map(_.flatten) // convenience method on `List` for concatenating a list of lists
+  //
+  //
+  def parFold[A,B,C](l: Seq[A], init: C)(s: A => B)(f: (C, B) => C): Par[C] = {
+    val pars = l.map(asyncF(s))
+
+    Par.map(sequence(pars))(_.foldLeft(init)(f))
+  }
+
+  def maxString(l: Seq[String]): Par[String] =
+    Par.parFold(l, "")((v) => (v, v.size)) { case (acc, (v, s)) => if (s > acc.size) v else acc }
+
+  def maxInt(l: Seq[Int]): Par[Int] =
+    Par.parFold(l, 0)(identity) { case (acc, v) => if (v > acc) v else acc }
+
+  def equal[A](e: ExecutorService)(p: Par[A], p2: Par[A]): Boolean =
+  {    
+    val p1r = p(e).get 
+    val p2r = p2(e).get
+    p1r == p2r
+  }
 }
 
 object Exercise extends App {
-  val executorService = Executors.newSingleThreadExecutor
-  val timeouted = Par.map2Timeouted(p,y)((a, b) => a * 3 * b)(executorService).get(3, TimeUnit.MILLISECONDS)
   val listOfPar = List(Par.unit(1), Par.unit(2), Par.unit(3), Par.unit(4))
 
-  println(timeouted)
-  println(sequence[Int](listOfPar)(executorService).get)
-  println(parMap(List(1, 2, 3, 4)) { a => a + 1 })
+  println(Par.sequence[Int](listOfPar)(S).get)
+  val S = Executors.newFixedThreadPool(2)
+  println(Par.parMap(List(1, 2, 3, 4)) { a => a + 1 }(S).get)
+  println(Par.parFilter(List(1, 2, 3, 4)) { a => a % 2 == 0 }(S).get)
+  println(Par.maxString(List("a", "ab", "c", "easdas"))(S).get)
+
+  val a = Par.lazyUnit(42 + 1)
+  println(Par.equal(S)(Par.fork(a), Par.fork(a)))
+
+
+  // es => es.submit(new Callable[A] {
+  //  es =>  es.submit(new Callable[A] {
+  //     es => es.submit(new Callable[A] {
+  //         def call = {
+  //           println(s"Im get $es")
+  //           a(es).get
+  //         }
+  //       }
+  //     )
+  //  }
+  //}
+  val deadlock = Par.fork(Par.fork(Par.fork(a)))(S)
+
+  deadlock.get()
+
+  println("Never End")
 }
+
