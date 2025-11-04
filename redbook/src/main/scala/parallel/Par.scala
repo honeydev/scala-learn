@@ -1,15 +1,8 @@
-package parallel
+package parallel.par
 
 import java.lang.System.currentTimeMillis
 import java.util.concurrent._
 
-trait Comparable[A] {
-
-  def compare(a: A, b: A)
-}
-
-
-case class Computation[A](value: A)
 
 object Par {
   type Par[A] = ExecutorService => Future[A]
@@ -19,7 +12,8 @@ object Par {
       Par.unit(a)
     }
     def isDone = true
-    def get(timeout: Long, units: TimeUnit) = {
+
+    def get(timeout: Long, units: TimeUnit): A = {
       get
     }    
     def isCancelled = false
@@ -152,9 +146,9 @@ object Exercise extends App {
   //     )
   //  }
   //}
-  val deadlock = Par.fork(Par.fork(Par.fork(a)))(S)
-
-  deadlock.get()
+//  val deadlock = Par.fork(Par.fork(Par.fork(a)))(S)
+//
+//  deadlock.get()
 
   println("Never End")
 }
