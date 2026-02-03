@@ -1,3 +1,5 @@
+package macroexample
+
 import scala.quoted.*
 import scala.annotation.StaticAnnotation
 import scala.compiletime.{error, codeOf}

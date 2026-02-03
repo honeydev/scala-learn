@@ -1,3 +1,4 @@
+package macroexample
 
 @main
 def main(): Unit = {
