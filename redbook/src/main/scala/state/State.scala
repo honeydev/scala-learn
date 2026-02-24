@@ -3,15 +3,13 @@ package state
 case class State[S, +A](run: S => (A, S)) {
 
   def flatMap[B](f: A => State[S, B]): State[S, B] =
-    State(
-      outerState => {
-        val (nextValue, nextState) = run(outerState)
-        f(nextValue).run(nextState)
-      }
-    )
+    State(outerState => {
+      val (nextValue, nextState) = run(outerState)
+      f(nextValue).run(nextState)
+    })
 
   def map[B](f: A => B): State[S, B] =
-      flatMap(a => State.unit(f(a)))
+    flatMap(a => State.unit(f(a)))
 
   def map2[B, C](rb: State[S, B])(f: (A, B) => C): State[S, C] =
     flatMap(a => rb.flatMap(b => State.unit(f(a, b))))
@@ -40,9 +38,7 @@ case object Turn extends Input
 
 case class Machine(locked: Boolean, candies: Int, coins: Int)
 
-object Machine {
-
-}
+object Machine {}
 
 object Run extends App {
   val value = State

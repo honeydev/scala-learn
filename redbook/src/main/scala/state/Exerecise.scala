@@ -5,8 +5,9 @@ trait RNG {
 }
 
 case class SimpleRNG(seed: Long) extends RNG {
+
   def nextInt: (Int, RNG) = {
-    val newSeed = (seed * 0x5DEECE66DL + 0xBL) & 0xFFFFFFFFFFFFL
+    val newSeed = (seed * 0x5deece66dL + 0xbL) & 0xffffffffffffL
     val nextRNG = SimpleRNG(newSeed)
     val n = (newSeed >>> 16).toInt
     (n, nextRNG)
@@ -20,6 +21,15 @@ object Rand {
   def unit[A](a: A): Rand[A] =
     rng => (a, rng)
 
+  def nonNegativeInt: Rand[Int] =
+    rng => {
+      val (randomNum, nextRNG) = rng.nextInt
+      (
+        if (randomNum < 0) -randomNum else randomNum,
+        nextRNG
+      )
+    }
+
   // def map[A, B](s: Rand[A])(f: A => B): Rand[B] =
   //   rng => {
   //     val (a, rng2) = s(rng)
@@ -30,23 +40,22 @@ object Rand {
 
   // def map2[A, B, C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] =
   //   rng => {
-  //     val (a, rng1) = ra(rng) 
+  //     val (a, rng1) = ra(rng)
   //     val (b, rng2) = rb(rng1)
 
   //     (f(a, b), rng2)
   //   }
   //
   def map2[A, B, C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] =
-    flatMap(ra) {  n1 => flatMap(rb) { n2 => unit(f(n1, n2)) } }
+    flatMap(ra) { n1 => flatMap(rb) { n2 => unit(f(n1, n2)) } }
 
-  def flatMap[A, B](f: Rand[A])(g: A => Rand[B]): Rand[B] = {
-    rng => {
+  def flatMap[A, B](f: Rand[A])(g: A => Rand[B]): Rand[B] = { rng =>
+    {
       val (innerRand, rng2) = f(rng)
 
       g(innerRand)(rng2)
     }
   }
-
 
   // IMPLEMENT flatMap VIA map
   // def flatMap[A,B](f: Rand[A])(g: A => Rand[B]): Rand[B] = {
@@ -57,16 +66,15 @@ object Rand {
   //   }
   // }
 
-  def both[A, B](ra: Rand[A], rb: Rand[B]): Rand[(A, B)] = 
+  def both[A, B](ra: Rand[A], rb: Rand[B]): Rand[(A, B)] =
     map2(ra, rb)((_, _))
 
-  def sequence[A](fs: List[Rand[A]]): Rand[List[A]] = {
-    rng => 
-      fs.foldLeft((List[A](), rng)) { case ((list, currentRng), rand: Rand[A]) => 
-        val (a, rng2) = rand(currentRng)
-        (a :: list, rng2)
-      }
-  } 
+  def sequence[A](fs: List[Rand[A]]): Rand[List[A]] = { rng =>
+    fs.foldLeft((List[A](), rng)) { case ((list, currentRng), rand: Rand[A]) =>
+      val (a, rng2) = rand(currentRng)
+      (a :: list, rng2)
+    }
+  }
 }
 
 object Exerecise extends App {
@@ -82,7 +90,7 @@ object Exerecise extends App {
 
   def intDouble(rng: RNG): ((Int, Double), RNG) = {
     val (randomInt, nextRNG) = rng.nextInt
-    val (randomDouble, nextRNG2)= double(nextRNG)
+    val (randomDouble, nextRNG2) = double(nextRNG)
     ((randomInt, randomDouble), nextRNG2)
   }
 
@@ -94,18 +102,19 @@ object Exerecise extends App {
   def double3(rng: RNG): ((Double, Double, Double), RNG) = {
     val (double1, rng1) = double(rng)
     val (double2, rng2) = double(rng1)
-    val (double3, rng3)  = double(rng2)
+    val (double3, rng3) = double(rng2)
     ((double1, double2, double3), rng3)
   }
 
   def ints(count: Int)(rng: RNG): (List[Int], RNG) = {
-      (1 to count)
-        .foldLeft((List[Int](), rng)) { case ((acc: List[Int], rng: RNG), _: Int) =>
-        val (nextInt, nextRNG) = rng.nextInt
-        Tuple2[List[Int], RNG](acc :+ nextInt, nextRNG)
+    (1 to count)
+      .foldLeft((List[Int](), rng)) {
+        case ((acc: List[Int], rng: RNG), _: Int) =>
+          val (nextInt, nextRNG) = rng.nextInt
+          Tuple2[List[Int], RNG](acc :+ nextInt, nextRNG)
       }
   }
-  
+
   def double(rand: Rand[Int]): Rand[Double] =
     map(rand)(v => v.toDouble)
 
@@ -121,4 +130,3 @@ object Exerecise extends App {
   println(sequenceRand(SimpleRNG(12345L)))
   println(flatMap(double(unit(5))) { v => unit(v) })
 }
-
