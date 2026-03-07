@@ -4,5 +4,5 @@ package macroexample
 def main(): Unit = {
 
   val x = AnnotationUtils.printMethodAnnotations[UserService]("getUserById")
-  println("Abc")
+//  println("Abc")
 }
