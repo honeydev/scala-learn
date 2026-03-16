@@ -1,13 +1,15 @@
 package parallel.propertybased
-
 import state.State
 import state.SimpleRNG
 import state.RNG
 import state.Rand
-// import strictlazy.Stream
 import parallel.propertybased.Gen.weighted
 
-case class Gen[A](sample: State[RNG, A]) {
+case class Gen[+A](sample: State[RNG, A]) {
+
+  def map[B](f: A => B): Gen[B] =
+    Gen(sample.map(f))
+
   def flatMap[B](f: A => Gen[B]): Gen[B] =
     Gen(sample.flatMap(v => f(v).sample))
 
@@ -16,6 +18,8 @@ case class Gen[A](sample: State[RNG, A]) {
       val listOfGens = (1 to listSize).map { _ => this.sample }.toList
       Gen(State.sequence(listOfGens))
     })
+
+  def unsized: SGen[A] = SGen((_) => this)
 }
 
 object Gen {
@@ -52,7 +56,13 @@ object Gen {
       if (v <= weight1) gen1 else gen2
     }
   }
+}
 
+case class SGen[+A](forSize: Int => Gen[A]) {
+  def map[B](f: A => B): SGen[B] = {
+
+    SGen(forSize(_) map f)
+  }
 }
 
 import Prop._
@@ -61,9 +71,10 @@ case class Prop(run: (TestCases, RNG) => Result) {
 
   def check: Result = ???
 
-  def &&(p: Prop): Prop = new Prop(testCases => {
-    val r1 = run(testCases)
-    val r2 = p.run(testCases)
+  def &&(p: Prop) = new Prop((tc, rng) => {
+
+    val r1 = run(tc, rng)
+    val r2 = run(tc, rng)
 
     (r1, r2) match {
       case (Falsified(fail1, succ1), Falsified(fail2, succ2)) =>
@@ -134,5 +145,4 @@ object PropertyBased extends App {
       .sample
       .run(SimpleRNG(1213231L))
   )
-
 }
