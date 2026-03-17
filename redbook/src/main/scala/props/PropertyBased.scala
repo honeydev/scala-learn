@@ -63,6 +63,12 @@ case class SGen[+A](forSize: Int => Gen[A]) {
 
     SGen(forSize(_) map f)
   }
+
+  def flatMap[B](f: A => SGen[B]): SGen[B] = {
+    SGen { size =>
+      forSize(size).flatMap { a => f(a).forSize(size) }
+    }
+  }
 }
 
 import Prop._

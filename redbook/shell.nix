@@ -3,6 +3,7 @@
 pkgs.mkShell {
   # Add other build inputs/dependencies here, for example:
   buildInputs = with pkgs; [
+      git
       pkgs.sbt
       pkgs.jdk21
       pkgs.postgresql
@@ -11,6 +12,7 @@ pkgs.mkShell {
 
   # Optional: a script to run after entering the shell
   shellHook = ''
+    zsh
     export PATH="$PATH:/home/honey/.local/share/coursier/bin"
     echo "Welcome to the stdenv development shell!"
   '';
