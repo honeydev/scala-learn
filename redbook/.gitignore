@@ -2,3 +2,6 @@
 target/
 /.bloop/
 /.idea/
+/.metals/
+/project/.bloop
+/project/project
